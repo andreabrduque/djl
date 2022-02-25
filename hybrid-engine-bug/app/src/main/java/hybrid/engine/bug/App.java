@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.Duration;
+
 
 
 public class App {
@@ -95,7 +97,7 @@ public class App {
         }
     }
 
-    public static void main(String[] args) throws IOException, TranslateException, ModelException {
+    public static void main(String[] args) throws IOException, TranslateException, ModelException, InterruptedException {
         String modelUrl = "file:///Users/andreaduque/Workspace/djl/ner_mock.onnx";
         Batch inputs =  new Batch();
 
@@ -110,13 +112,25 @@ public class App {
                 .optOption("executionMode", "SEQUENTIAL")
                 .optOption("memoryPatternOptimization", "false")
                 .build();
-
-    //     //put a for here
-        try (ZooModel<Batch, EmptyClassification> model = criteria.loadModel();
-                Predictor<Batch, EmptyClassification> predictor = model.newPredictor()) {
+        
+        Duration duration = Duration.ofSeconds(10);
+        Boolean loop = true;
+        long begin = System.currentTimeMillis();
+        while(!duration.isNegative() && loop) {
+            try (ZooModel<Batch, EmptyClassification> model = criteria.loadModel();
+            Predictor<Batch, EmptyClassification> predictor = model.newPredictor()) {                    
                     EmptyClassification result = predictor.predict(inputs);
-        }
-
-       logger.info("the end");
+                    logger.info("prediction");                    
+            } catch(Exception e) {
+                loop = false;
+                e.printStackTrace();
+                logger.info("the end");
+            }        
+            long delta = System.currentTimeMillis() - begin;
+            duration = duration.minus(Duration.ofMillis(delta));
+            if (!duration.isNegative()) {
+                logger.info(duration + " seconds left");
+            }
+        }        
     }
 }
