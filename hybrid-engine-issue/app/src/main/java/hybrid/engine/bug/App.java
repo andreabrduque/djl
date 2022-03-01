@@ -107,6 +107,7 @@ public class App {
 
         ZooModel<Batch, EmptyClassification> model = ModelZoo.loadModel(criteria);
         
+        //takes around 40mins to increase up to 1gb
         Duration duration = Duration.ofSeconds(500);
         Boolean loop = true;
         long begin = System.currentTimeMillis();
