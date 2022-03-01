@@ -86,8 +86,6 @@ public final class Benchmark extends AbstractBenchmark {
     }
 
     private static void configEngines(boolean multithreading) {
-        System.setProperty("collect-memory", "true");
-
         if (multithreading) {
             if (System.getProperty("ai.djl.pytorch.num_interop_threads") == null) {
                 System.setProperty("ai.djl.pytorch.num_interop_threads", "1");
