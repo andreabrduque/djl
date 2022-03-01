@@ -10,9 +10,6 @@ import java.util.stream.Collectors;
 import ai.djl.MalformedModelException;
 import ai.djl.ModelException;
 import ai.djl.inference.Predictor;
-import ai.djl.modality.Classifications;
-import ai.djl.modality.nlp.DefaultVocabulary;
-import ai.djl.modality.nlp.bert.BertFullTokenizer;
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDArrays;
 import ai.djl.ndarray.NDList;
@@ -20,21 +17,19 @@ import ai.djl.ndarray.NDManager;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.repository.zoo.ZooModel;
+import ai.djl.repository.zoo.ModelZoo;
 import ai.djl.training.util.ProgressBar;
 import ai.djl.translate.NoBatchifyTranslator;
 import ai.djl.translate.TranslateException;
 import ai.djl.translate.TranslatorContext;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.time.Duration;
-
+import ai.djl.ndarray.index.NDIndex;
+import ai.djl.Device;
 
 
 public class App {
@@ -42,10 +37,6 @@ public class App {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     private App() {}
-
-    public String getGreeting() {
-        return "Hello World!";
-    }
 
     private final static class EmptyClassification {}
 
@@ -74,7 +65,6 @@ public class App {
         @Override
         public NDList processInput(TranslatorContext ctx, Batch inputs) {
             NDManager inputManager = ctx.getNDManager();
-            //do non supported operation and watch things explode
             NDList inputList = new NDList();
             inputList.add(inputManager.create(inputs.getBatch()));
             inputList.add(inputManager.create(inputs.getBatch()));
@@ -85,19 +75,20 @@ public class App {
     
         @Override
         public EmptyClassification processOutput(TranslatorContext ctx, NDList list) {
-            // NDArray batchOutput = list.singletonOrThrow();
-            // int numOutputs = (int) batchOutput.getShape().get(0);
-            // Classifications[] output = new Classifications[numOutputs];
+            NDArray candidates = list.get(1);
 
-            // for (int i = 0; i < numOutputs; i++) {
-            //     output[i] = new Classifications(classes, batchOutput.get(i));
-            // }
-            // return output;
+            //operation from alternative engine here
+            //if I don't do unsupported operations, I don't have any problems
+            NDArray batchIds = candidates.get(new NDIndex(":, 0"));
+
             return new EmptyClassification();
         }
     }
 
     public static void main(String[] args) throws IOException, TranslateException, ModelException, InterruptedException {
+        System.setProperty("ai.djl.pytorch.num_interop_threads", "1");
+        System.setProperty("ai.djl.pytorch.num_threads", "1");
+        
         String modelUrl = "file:///Users/andreaduque/Workspace/djl/ner_mock.onnx";
         Batch inputs =  new Batch();
 
@@ -111,14 +102,16 @@ public class App {
                 .optOption("intraOpNumThreads", "1")
                 .optOption("executionMode", "SEQUENTIAL")
                 .optOption("memoryPatternOptimization", "false")
+                .optDevice(Device.gpu())
                 .build();
+
+        ZooModel<Batch, EmptyClassification> model = ModelZoo.loadModel(criteria);
         
-        Duration duration = Duration.ofSeconds(10);
+        Duration duration = Duration.ofSeconds(500);
         Boolean loop = true;
         long begin = System.currentTimeMillis();
         while(!duration.isNegative() && loop) {
-            try (ZooModel<Batch, EmptyClassification> model = criteria.loadModel();
-            Predictor<Batch, EmptyClassification> predictor = model.newPredictor()) {                    
+            try (Predictor<Batch, EmptyClassification> predictor = model.newPredictor()) {                    
                     EmptyClassification result = predictor.predict(inputs);
                     logger.info("prediction");                    
             } catch(Exception e) {
@@ -131,6 +124,7 @@ public class App {
             if (!duration.isNegative()) {
                 logger.info(duration + " seconds left");
             }
-        }        
+        } 
+        model.close();       
     }
 }
