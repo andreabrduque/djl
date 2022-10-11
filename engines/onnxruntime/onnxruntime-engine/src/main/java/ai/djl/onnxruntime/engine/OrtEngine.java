@@ -22,7 +22,9 @@ import ai.djl.nn.SymbolBlock;
 import ai.djl.training.GradientCollector;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtLoggingLevel;
 import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.OrtEnvironment.ThreadingOptions;
 
 /**
  * The {@code OrtEngine} is an implementation of the {@link Engine} based on the <a
@@ -41,8 +43,21 @@ public final class OrtEngine extends Engine {
     private boolean initialized;
 
     private OrtEngine() {
+        OrtLoggingLevel logging = OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE;
+        String name = "ort-java";
+
         // init OrtRuntime
-        this.env = OrtEnvironment.getEnvironment();
+        ThreadingOptions tOptions = new ThreadingOptions();
+        try {
+            tOptions.setGlobalInterOpNumThreads(0);
+            tOptions.setGlobalIntraOpNumThreads(0);
+            this.env = OrtEnvironment.getEnvironment(logging, name, tOptions);
+        } catch (Exception e) {
+            //IllegalStateException or OrtException
+            tOptions.close();
+            this.env = OrtEnvironment.getEnvironment(logging, name);
+        }       
+    
     }
 
     static Engine newInstance() {
