@@ -43,7 +43,7 @@ public final class OrtEngine extends Engine {
     private boolean initialized;
 
     private OrtEngine() {
-        OrtLoggingLevel logging = OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE;
+        OrtLoggingLevel logging = OrtLoggingLevel.ORT_LOGGING_LEVEL_WARNING;
         String name = "ort-java";
 
         // init OrtRuntime
