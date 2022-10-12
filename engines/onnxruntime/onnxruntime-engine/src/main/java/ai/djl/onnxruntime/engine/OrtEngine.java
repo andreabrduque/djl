@@ -49,8 +49,8 @@ public final class OrtEngine extends Engine {
         // init OrtRuntime
         ThreadingOptions tOptions = new ThreadingOptions();
         try {
-            tOptions.setGlobalInterOpNumThreads(0);
-            tOptions.setGlobalIntraOpNumThreads(0);
+            tOptions.setGlobalInterOpNumThreads(1);
+            tOptions.setGlobalIntraOpNumThreads(1);
             this.env = OrtEnvironment.getEnvironment(logging, name, tOptions);
         } catch (Exception e) {
             //IllegalStateException or OrtException
