@@ -102,7 +102,6 @@ public class OrtModel extends BaseModel {
             SessionOptions ortOptions = getSessionOptions(options);
             ortOptions.disablePerSessionThreads();
             OrtSession session = env.createSession(buf, ortOptions);
-            ortOptions.disablePerSessionThreads();
             block = new OrtSymbolBlock(session, (OrtNDManager) manager);
         } catch (OrtException e) {
             throw new MalformedModelException("ONNX Model cannot be loaded", e);
