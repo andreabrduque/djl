@@ -48,7 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrtSymbolBlock extends AbstractSymbolBlock implements AutoCloseable {
 
     private OrtSession session;
+    private OrtSession.RunOptions runOptions;
     private OrtNDManager manager;
+    
 
     /**
      * Constructs a {@code OrtSymbolBlock}.
@@ -63,6 +65,11 @@ public class OrtSymbolBlock extends AbstractSymbolBlock implements AutoCloseable
         this.session = session;
         this.manager = manager;
         manager.attachInternal(UUID.randomUUID().toString(), this);
+
+        OrtSession.RunOptions runOptions = new OrtSession.RunOptions();
+        runOptions.addRunConfigEntry("disable_synchronize_execution_providers", "1");
+
+        this.runOptions = runOptions;        
     }
 
     /** {@inheritDoc} */
@@ -107,8 +114,8 @@ public class OrtSymbolBlock extends AbstractSymbolBlock implements AutoCloseable
                     container.put(inputNames.get(i), ortNDArray.getTensor());
                 }
             }
-
-            OrtSession.Result results = session.run(container);
+          
+            OrtSession.Result results = session.run(container, this.runOptions);
             NDList ret = evaluateOutput(results);
             ret.attach(inputs.head().getManager());
             return ret;
